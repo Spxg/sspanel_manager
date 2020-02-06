@@ -123,7 +123,7 @@ pub fn get_login_info() -> Result<(WebsiteData, LoginInformation, bool), Box<dyn
             let (website, user_builder) = json.parse();
             let check = user_builder.code_enable;
 
-            let mut user = user_builder.build_login_information("config.json");
+            let mut user = user_builder.build_login_information("");
 
             if check {
                 loop {

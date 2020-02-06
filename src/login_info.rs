@@ -1,12 +1,10 @@
-use reqwest::Client;
-
 extern crate serde_json;
 extern crate serde;
-
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 use crate::website_info::{WebsiteDataBuilder, WebsiteData};
 use std::io::stdin;
+use reqwest::Client;
 
 pub struct LoginInformation {
     email: String,
@@ -125,7 +123,7 @@ pub fn get_login_info() -> Result<(WebsiteData, LoginInformation, bool), Box<dyn
             let (website, user_builder) = json.parse();
             let check = user_builder.code_enable;
 
-            let mut user = user_builder.build_login_information("");
+            let mut user = user_builder.build_login_information("config.json");
 
             if check {
                 loop {

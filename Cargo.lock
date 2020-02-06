@@ -939,6 +939,7 @@ name = "sspanel_manager"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "lazy_static",
  "regex",
  "reqwest",
  "serde",

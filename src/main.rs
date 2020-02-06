@@ -6,6 +6,7 @@ mod user_info;
 mod menu;
 mod logout;
 
+#[macro_use] extern crate lazy_static;
 use crate::menu::Menu;
 use std::io::{stdin, Write};
 use crate::login_info::Json;

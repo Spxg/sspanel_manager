@@ -2,6 +2,18 @@ use regex::Regex;
 use reqwest::Client;
 use crate::user_info::{User, Records};
 
+lazy_static! {
+    static ref RE: Regex = Regex::new("<div class=\"form-group form-group-label\">(.*?)</div>").unwrap();
+    static ref RE_ONE: Regex = Regex::new("<input class=\"form-control maxwidth-edit\".*?id=\"(?P<id>.*?)\".*?value=\"(?P<value>.*?)\".*?>")
+        .unwrap();
+    static ref RE_TWO: Regex = Regex::new("<div class=\"checkbox switch\">.*?value=\"(?P<value>.*?)\".*?id=\"(?P<id>.*?)\".*?type")
+        .unwrap();
+    static ref RE_THREE: Regex = Regex::new("<select.*?id=\"(?P<id>.*?)\".*?value=\"(?P<value>.*?)\" selected")
+        .unwrap();
+    static ref RE_FOUR: Regex = Regex::new("<textarea.*?id=\"(?P<id>.*?)\".*?>(?P<value>.*?)</textarea>")
+        .unwrap();
+}
+
 pub fn parse_information(orign: String) -> Vec<(String, String)> {
     let mut x = orign.replace("\n", "_");
     x = x.replace(char::is_control, "")
@@ -9,39 +21,29 @@ pub fn parse_information(orign: String) -> Vec<(String, String)> {
         .replace("class=\"access-hide\"", "value=\"0\"")
         .replace("checked value=\"0\"", "value=\"1\"");
 
-    let regex = Regex::new("<div class=\"form-group form-group-label\">(.*?)</div>").unwrap();
-    let regex_info_one = Regex::new("<input class=\"form-control maxwidth-edit\".*?id=\"(?P<id>.*?)\".*?value=\"(?P<value>.*?)\".*?>")
-        .unwrap();
-    let regex_info_two = Regex::new("<div class=\"checkbox switch\">.*?value=\"(?P<value>.*?)\".*?id=\"(?P<id>.*?)\".*?type")
-        .unwrap();
-    let regex_info_three = Regex::new("<select.*?id=\"(?P<id>.*?)\".*?value=\"(?P<value>.*?)\" selected")
-        .unwrap();
-    let regex_info_four = Regex::new("<textarea.*?id=\"(?P<id>.*?)\".*?>(?P<value>.*?)</textarea>")
-        .unwrap();
-
     let mut info_one = Vec::new();
     let mut info_two = Vec::new();
     let mut info_three = Vec::new();
     let mut info_four = Vec::new();
 
-    for i in regex.captures_iter(&x)
+    for i in RE.captures_iter(&x)
     {
-        info_one.extend(regex_info_one.captures_iter(i.get(1).unwrap().as_str())
-        .map(|i| (i.name("id").unwrap().as_str().to_string()
-                  , i.name("value").unwrap().as_str().to_string()))
-        .collect::<Vec<(String, String)>>());
-
-        info_two.extend(regex_info_two.captures_iter(i.get(1).unwrap().as_str())
+        info_one.extend(RE_ONE.captures_iter(i.get(1).unwrap().as_str())
             .map(|i| (i.name("id").unwrap().as_str().to_string()
                       , i.name("value").unwrap().as_str().to_string()))
             .collect::<Vec<(String, String)>>());
 
-        info_three.extend(regex_info_three.captures_iter(i.get(1).unwrap().as_str())
+        info_two.extend(RE_TWO.captures_iter(i.get(1).unwrap().as_str())
             .map(|i| (i.name("id").unwrap().as_str().to_string()
                       , i.name("value").unwrap().as_str().to_string()))
             .collect::<Vec<(String, String)>>());
 
-        info_four.extend(regex_info_four.captures_iter(i.get(1).unwrap().as_str())
+        info_three.extend(RE_THREE.captures_iter(i.get(1).unwrap().as_str())
+            .map(|i| (i.name("id").unwrap().as_str().to_string()
+                      , i.name("value").unwrap().as_str().to_string()))
+            .collect::<Vec<(String, String)>>());
+
+        info_four.extend(RE_FOUR.captures_iter(i.get(1).unwrap().as_str())
             .map(|i| (i.name("id").unwrap().as_str().to_string()
                       , i.name("value").unwrap().as_str().to_string().replace("_", "\n")))
             .collect::<Vec<(String, String)>>());

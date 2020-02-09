@@ -1,6 +1,6 @@
 mod login_info;
 mod edit_info;
-mod parse_info;
+mod parse;
 mod website_info;
 mod user_info;
 mod menu;
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match num.trim().parse::<i32>() {
                 Ok(0) => break,
                 Ok(1) => {
-                    let mut file = File::create("config.json")
+                    let mut file = File::create("login_info.json")
                         .expect("Failed to create file");
                     let json = Json::new(&website, &user);
                     let value = serde_json::to_string_pretty(&json)?;

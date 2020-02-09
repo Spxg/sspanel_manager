@@ -3,7 +3,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Information {
+pub struct Info {
     pub id: u32,
     pub user_name: String,
     pub email: String,
@@ -17,7 +17,7 @@ pub struct Information {
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
-    pub data: Vec<Information>,
+    pub data: Vec<Info>,
 }
 
 #[derive(Serialize, Deserialize)]

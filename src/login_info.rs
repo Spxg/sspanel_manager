@@ -1,12 +1,13 @@
 extern crate serde_json;
 extern crate serde;
+
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 use crate::website_info::{WebsiteDataBuilder, WebsiteData};
 use std::io::stdin;
 use reqwest::Client;
 
-pub struct LoginInformation {
+pub struct LoginInfo {
     email: String,
     passwd: String,
     code_enable: bool,
@@ -14,7 +15,7 @@ pub struct LoginInformation {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct LoginInformationBuilder {
+pub struct LoginInfoBuilder {
     email: String,
     passwd: String,
     code_enable: bool,
@@ -23,12 +24,12 @@ pub struct LoginInformationBuilder {
 #[derive(Serialize, Deserialize)]
 pub struct Json {
     address: WebsiteDataBuilder,
-    admin_info: LoginInformationBuilder,
+    admin_info: LoginInfoBuilder,
 }
 
-impl LoginInformation {
-    pub fn new() -> LoginInformationBuilder {
-        LoginInformationBuilder {
+impl LoginInfo {
+    pub fn new() -> LoginInfoBuilder {
+        LoginInfoBuilder {
             email: String::default(),
             passwd: String::default(),
             code_enable: false,
@@ -42,7 +43,7 @@ impl LoginInformation {
     }
 
     pub fn build_post_params(&self) -> Vec<(&str, &String)> {
-        let mut params = vec![];
+        let mut params = Vec::new();
         params.push(("email", &self.email));
         params.push(("passwd", &self.passwd));
         params.push(("code", &self.code));
@@ -71,7 +72,7 @@ impl LoginInformation {
     }
 }
 
-impl LoginInformationBuilder {
+impl LoginInfoBuilder {
     pub fn email(mut self, email: &str) -> Self {
         self.email = email.to_string();
         self
@@ -87,8 +88,8 @@ impl LoginInformationBuilder {
         self
     }
 
-    pub fn build_login_information(self, code: &str) -> LoginInformation {
-        LoginInformation {
+    pub fn build_login_info(self, code: &str) -> LoginInfo {
+        LoginInfo {
             email: self.email,
             passwd: self.passwd,
             code_enable: self.code_enable,
@@ -99,31 +100,30 @@ impl LoginInformationBuilder {
 
 
 impl Json {
-    pub fn new(address: &WebsiteData, admin_info: &LoginInformation) -> Json {
+    pub fn new(address: &WebsiteData, admin_info: &LoginInfo) -> Json {
         Json
         {
             address: WebsiteData::new().load_address(&address.website_address),
-            admin_info: LoginInformation::new()
+            admin_info: LoginInfo::new()
                 .email(&admin_info.email)
-                .passwd(&admin_info.passwd)
-                .code_enable(admin_info.code_enable),
+                .passwd(&admin_info.passwd),
         }
     }
 
-    pub fn parse(self) -> (WebsiteData, LoginInformationBuilder) {
+    pub fn parse(self) -> (WebsiteData, LoginInfoBuilder) {
         (self.address.build(), self.admin_info)
     }
 }
 
-pub fn get_login_info() -> Result<(WebsiteData, LoginInformation, bool), Box<dyn std::error::Error>> {
-    let (website, user, have_json) = match std::fs::read_to_string("config.json") {
+pub fn get_login_info() -> Result<(WebsiteData, LoginInfo, bool), Box<dyn std::error::Error>> {
+    let (website, user, have_json) = match std::fs::read_to_string("login_info.json") {
         Ok(i) => {
             println!("找到配置文件，开始登录");
             let json: Json = serde_json::from_str(&i)?;
             let (website, user_builder) = json.parse();
             let check = user_builder.code_enable;
 
-            let mut user = user_builder.build_login_information("");
+            let mut user = user_builder.build_login_info("");
 
             if check {
                 loop {
@@ -158,11 +158,11 @@ pub fn get_login_info() -> Result<(WebsiteData, LoginInformation, bool), Box<dyn
             let mut passwd = String::new();
             stdin().read_line(&mut passwd).unwrap();
 
-            let mut user = LoginInformation::new()
+            let mut user = LoginInfo::new()
                 .email(email.trim())
                 .passwd(passwd.trim())
                 .code_enable(false)
-                .build_login_information("");
+                .build_login_info("");
 
             loop {
                 println!("是否设置了两步验证(0未设置, 1设置了)");

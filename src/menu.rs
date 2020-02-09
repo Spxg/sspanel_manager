@@ -1,10 +1,11 @@
 use crate::user_info::User;
 use crate::logout::logout;
-use std::io::stdin;
+use std::io::{stdin, Write};
 use crate::website_info::WebsiteData;
-use crate::edit_info::{UserInformation, UserInformationEditer};
-use crate::{edit_info, parse_info};
+use crate::edit_info::{UserInfo, UserInfoEditer, UpdateQuicklyInfo};
+use crate::{edit_info, parse};
 use reqwest::Client;
+use std::fs::File;
 
 pub struct Menu {
     id: String,
@@ -15,7 +16,7 @@ pub struct Menu {
 
 impl Menu {
     pub async fn new(website: WebsiteData, client: Client) -> Result<Menu, Box<dyn std::error::Error>> {
-        let user = parse_info::parse_user_list(&website.user_address, &client).await?;
+        let user = parse::parse_user_list(&website.user_address, &client).await?;
 
         Ok(Menu {
             id: String::default(),
@@ -69,8 +70,8 @@ impl Menu {
 
     async fn loop_two(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         loop {
-            let mut info = UserInformation::new().edit();
-            edit_info::extend_information(&self.website.edit_address, &self.client, &mut info).await?;
+            let mut info = UserInfo::new().edit();
+            edit_info::extend_info(&self.website.edit_address, &self.client, &mut info).await?;
 
             selected();
             let mut num = String::default();
@@ -89,7 +90,7 @@ impl Menu {
         Ok(())
     }
 
-    async fn loop_three(&mut self, mut info: UserInformationEditer, mut is_update: bool)
+    async fn loop_three(&mut self, mut info: UserInfoEditer, mut is_update: bool)
                         -> Result<(), Box<dyn std::error::Error>> {
         loop {
             let mut num = String::default();
@@ -99,10 +100,54 @@ impl Menu {
             info = match num.trim().parse::<u32>() {
                 Ok(0) => break,
                 Ok(1) => {
-                    println!("请输入续费月数:");
-                    let mut value = String::new();
-                    stdin().read_line(&mut value).expect("Failed to read line");
-                    info.update_quickly(value.trim())
+                    match std::fs::read_to_string("update_quickly_info.json") {
+                        Ok(i) => {
+                            println!("请输入续费月数:");
+                            let mut value = String::new();
+                            let json: UpdateQuicklyInfo = serde_json::from_str(&i)?;
+
+                            stdin().read_line(&mut value).expect("Failed to read line");
+                            info.update_quickly(value.trim(), &json)
+                        }
+                        _ => {
+                            let mut builder = UpdateQuicklyInfo::new();
+                            println!("未找到便捷续费配置文件");
+
+                            println!("请输入续费一个月的流量");
+                            let mut data = String::new();
+                            stdin().read_line(&mut data).unwrap();
+                            builder = builder.data(data.trim());
+
+                            println!("请输入限速信息");
+                            let mut speed = String::new();
+                            stdin().read_line(&mut speed).unwrap();
+                            builder = builder.speed_limit(speed.trim());
+
+                            let json = builder.build();
+                            loop {
+                                println!("是否保存便捷登录信息，下次无需手动填写？(0取消， 1确定)");
+                                let mut num = String::new();
+                                stdin().read_line(&mut num).expect("Failed to read line");
+
+                                match num.trim().parse::<i32>() {
+                                    Ok(0) => break,
+                                    Ok(1) => {
+                                        let mut file = File::create("update_quickly_info.json")
+                                            .expect("Failed to create file");
+                                        let value = serde_json::to_string_pretty(&json)?;
+                                        file.write_all(value.as_bytes())?;
+                                        break;
+                                    }
+                                    _ => continue
+                                }
+                            }
+
+                            println!("请输入续费月数:");
+                            let mut value = String::new();
+                            stdin().read_line(&mut value).expect("Failed to read line");
+                            info.update_quickly(value.trim(), &json)
+                        }
+                    }
                 }
                 Ok(2) => {
                     println!("请输入要增加的月数:");
@@ -192,7 +237,7 @@ impl Menu {
         }
         if is_update {
             info.update().to_edit(&self.website.edit_post_address, &self.client).await?;
-            self.user = parse_info::parse_user_list(&self.website.user_address, &self.client).await?;
+            self.user = parse::parse_user_list(&self.website.user_address, &self.client).await?;
         }
 
         Ok(())

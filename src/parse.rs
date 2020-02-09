@@ -14,7 +14,7 @@ lazy_static! {
         .unwrap();
 }
 
-pub fn parse_information(orign: String) -> Vec<(String, String)> {
+pub fn parse_info(orign: String) -> Vec<(String, String)> {
     let mut x = orign.replace("\n", "_");
     x = x.replace(char::is_control, "")
         .replace("type=\"password\"", "value=\"\"")
